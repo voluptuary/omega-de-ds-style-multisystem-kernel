@@ -16,6 +16,7 @@ void SetRampage(u16 page);
 void IWRAM_CODE Progress(u16 x, u16 y, u16 w, u16 h, u16 c, u8 isDrawDirect);
 void IWRAM_CODE Send_FATbuffer(u32*buffer,u32 mode);
 void IWRAM_CODE SetRompageWithHardReset(u16 page,u32 bootmode);
+void IWRAM_CODE ResetWithEwramClear(u32 reset_flags) __attribute__((noreturn));
 void ReadSram(u32 address, u8* data , u32 size );
 void WriteSram(u32 address, u8* data , u32 size );
 void IWRAM_CODE Save_sav_info(u16 * SAV_info_buffer,u32 buffersize);

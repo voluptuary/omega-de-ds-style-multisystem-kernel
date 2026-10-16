@@ -275,7 +275,10 @@ void IWRAM_CODE SetRompageWithHardReset(u16 page,u32 bootmode)
 	SetRompage(page);
 	u32 reset_flags = RESET_PALETTE | RESET_VRAM | RESET_OAM | RESET_SIO | RESET_SOUND | RESET_OTHER;
 	if(bootmode == 0)
+	{
 		reset_flags |= RESET_EWRAM;
+		ResetWithEwramClear(reset_flags);
+	}
 	RegisterRamReset(reset_flags);
 	if(bootmode==1) {
 		if(key_L)

@@ -84,12 +84,13 @@ static void write_file(const char *path, const char *contents)
 	check(f_close(&file) == FR_OK, "close a test file");
 }
 
-static void find_alias(const char *long_name, char *alias, size_t alias_size)
+static void find_alias_in_directory(const char *path, const char *long_name,
+	char *alias, size_t alias_size)
 {
 	DIR dir;
 	FILINFO info;
 	int found = 0;
-	check(f_opendir(&dir, "0:/") == FR_OK, "open root directory for alias lookup");
+	check(f_opendir(&dir, path) == FR_OK, "open directory for alias lookup");
 	while(f_readdir(&dir, &info) == FR_OK && info.fname[0])
 	{
 		if(strcmp(info.fname, long_name) == 0)
@@ -103,6 +104,11 @@ static void find_alias(const char *long_name, char *alias, size_t alias_size)
 	}
 	check(f_closedir(&dir) == FR_OK, "close root directory after alias lookup");
 	check(found, "find the long-name entry");
+}
+
+static void find_alias(const char *long_name, char *alias, size_t alias_size)
+{
+	find_alias_in_directory("0:/", long_name, alias, alias_size);
 }
 
 static void find_name_by_alias(const char *alias, char *long_name, size_t name_size)
@@ -277,12 +283,44 @@ static void test_long_name_alias_operations(void)
 	check(f_stat(exact_path, &info) == FR_OK, "the exact 99-byte sibling remains after alias deletion");
 }
 
+static void test_long_directory_title_resolution(void)
+{
+	static const char parent_name[] = "Outer Directory Long Name";
+	static const char child_name[] = "Inner Folder Long Name";
+	char parent_alias[13];
+	char parent_alias_path[32];
+	char child_path[96];
+	DIR dir;
+	FILINFO info;
+	int found = 0;
+
+	check(f_mkdir("0:/Outer Directory Long Name") == FR_OK,
+		"create a parent directory with an LFN");
+	find_alias(parent_name, parent_alias, sizeof(parent_alias));
+	snprintf(parent_alias_path, sizeof(parent_alias_path), "0:/%s", parent_alias);
+	snprintf(child_path, sizeof(child_path), "0:/%s/%s", parent_name, child_name);
+	check(f_mkdir(child_path) == FR_OK, "create a nested directory with an LFN");
+	check(f_opendir(&dir, parent_alias_path) == FR_OK,
+		"open an LFN parent directory through the launcher's SFN-preserving path");
+	while(f_readdir(&dir, &info) == FR_OK && info.fname[0])
+	{
+		if(strcmp(info.fname, child_name) == 0)
+		{
+			found = 1;
+			break;
+		}
+	}
+	check(f_closedir(&dir) == FR_OK, "close the nested LFN directory");
+	check(found, "directory enumeration returns the full title-bar LFN");
+}
+
 int main(void)
 {
 	memset(disk, 0, sizeof(disk));
 	format_disk();
 	test_legacy_path_policy();
 	test_long_name_alias_operations();
+	test_long_directory_title_resolution();
 	test_maximum_save_backup_path();
 	puts("FatFs long-name identity scenarios passed.");
 	return 0;

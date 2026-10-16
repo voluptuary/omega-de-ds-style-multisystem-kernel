@@ -48,6 +48,20 @@ clearL2:
 RegisterRamReset:
 	swi		1
 	bx		lr
+
+@; Clear EWRAM only after moving off the EWRAM user stack. Keep the reset handoff
+@; in IWRAM so returning from RegisterRamReset never touches the cleared stack.
+	.global ResetWithEwramClear
+	.type ResetWithEwramClear, %function
+ResetWithEwramClear:
+	ldr	r1, =0x04000208
+	movs	r2, #0
+	strh	r2, [r1]
+	ldr	r1, =0x03007F00
+	mov	sp, r1
+	bl	RegisterRamReset
+	b	SoftReset_now
+
 @----------------------------------------------
 	.global	SoftReset
 SoftReset:
