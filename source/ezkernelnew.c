@@ -26,6 +26,8 @@
 #include "launcher_text.h"
 #include "launcher_navigation.h"
 #include "launcher_path_policy.h"
+#include "launcher_artwork_path.h"
+#include "launcher_indexed_name.h"
 #include "thai620.h"
 
 static void Launcher_SaveUnifiedSettings(void);
@@ -191,6 +193,10 @@ static FILINFO launcher_custom_thumb_scan_info EWRAM_BSS;
 static DIR launcher_path_resolve_dir EWRAM_BSS;
 static FILINFO launcher_path_resolve_info EWRAM_BSS;
 static TCHAR launcher_resolved_entry_name[256]EWRAM_BSS;
+static TCHAR launcher_artwork_mirror_dir[MAX_path_len]EWRAM_BSS;
+static TCHAR launcher_artwork_mirror_source_dir[MAX_path_len]EWRAM_BSS;
+static TCHAR launcher_artwork_mirror_component[256]EWRAM_BSS;
+static u8 launcher_artwork_mirror_dir_cache_valid EWRAM_BSS;
 static TCHAR launcher_current_folder_label_cache[256]EWRAM_BSS;
 static TCHAR launcher_current_folder_path_cache[MAX_path_len]EWRAM_BSS;
 static u8 launcher_current_folder_label_cache_valid EWRAM_BSS;
@@ -4022,6 +4028,42 @@ static u32 Launcher_ResolveDirectoryEntry(const TCHAR *path, const TCHAR *compon
 	return found && !ambiguous && result == FR_OK && close_result == FR_OK;
 }
 
+static int Launcher_ResolveArtworkDirectoryComponent(void *context,
+	const char *parent_path, const char *component,
+	char *resolved_name, size_t resolved_name_capacity)
+{
+	TCHAR alias[13];
+	u8 attributes = 0;
+
+	(void)context;
+	if(resolved_name_capacity > 0xFFFFFFFFU ||
+		!Launcher_ResolveDirectoryEntry(parent_path, component,
+		resolved_name, (u32)resolved_name_capacity, alias, sizeof(alias), 0, &attributes))
+		return 0;
+	return (attributes & AM_DIR) != 0;
+}
+
+static u32 Launcher_ResolveArtworkDirectoryPath(const char *path)
+{
+	size_t path_length;
+	if(!path)
+		return 0;
+	if(launcher_artwork_mirror_dir_cache_valid &&
+		strcmp(path, launcher_artwork_mirror_source_dir) == 0)
+		return 1;
+	launcher_artwork_mirror_dir_cache_valid = 0;
+	path_length = strlen(path);
+	if(path_length >= sizeof(launcher_artwork_mirror_source_dir) ||
+		!LauncherArtworkResolveDirectoryPath(path,
+		launcher_artwork_mirror_dir, sizeof(launcher_artwork_mirror_dir),
+		launcher_artwork_mirror_component, sizeof(launcher_artwork_mirror_component),
+		Launcher_ResolveArtworkDirectoryComponent, 0))
+		return 0;
+	memcpy(launcher_artwork_mirror_source_dir, path, path_length + 1);
+	launcher_artwork_mirror_dir_cache_valid = 1;
+	return 1;
+}
+
 static u32 Launcher_ResolveFullPath(const TCHAR *full_path, u32 stored_path_capacity,
 	TCHAR *out_path, u32 out_path_size, TCHAR *out_name, u32 out_name_size,
 	TCHAR *out_alias, u32 out_alias_size, u32 *out_size)
@@ -6414,7 +6456,10 @@ static u32 Launcher_LoadMirroredThumbnail(const char *rom_dir, const char *filen
 	   filename stem.  A 256-byte buffer truncates valid deep LFN paths. */
 	char picpath[MAX_path_len * 2 + 32];
 	char *title = launcher_custom_thumb_name;
+	const char *candidate_dirs[2];
 	const char *relative_dir;
+	u32 candidate_count = 0;
+	u32 i;
 	int written;
 
 	if(!rom_dir || !filename || !filename[0] || !dst)
@@ -6423,17 +6468,33 @@ static u32 Launcher_LoadMirroredThumbnail(const char *rom_dir, const char *filen
 	if(!title[0])
 		return 0;
 
-	/* Drop the leading slash because the image root is already absolute. */
-	relative_dir = rom_dir;
-	while(*relative_dir == '/')
-		relative_dir++;
-	if(!relative_dir[0])
-		written = snprintf(picpath, sizeof(picpath), "%s/%s.bmp", Launcher_ThumbnailFolder(), title);
+	/* Browser paths intentionally retain SFN aliases for reliable ROM access.
+	   Artwork mirrors the visible SD tree, whose directory names are LFNs. Try
+	   the resolved path first, then the legacy alias path for existing packs. */
+	if(Launcher_ResolveArtworkDirectoryPath(rom_dir))
+	{
+		candidate_dirs[candidate_count++] = launcher_artwork_mirror_dir;
+		if(strcmp(launcher_artwork_mirror_dir, rom_dir) != 0)
+			candidate_dirs[candidate_count++] = rom_dir;
+	}
 	else
-		written = snprintf(picpath, sizeof(picpath), "%s/%s/%s.bmp", Launcher_ThumbnailFolder(), relative_dir, title);
-	if(written <= 0 || (u32)written >= sizeof(picpath))
-		return 0;
-	return Launcher_LoadThumbnailFile(picpath, dst);
+	{
+		candidate_dirs[candidate_count++] = rom_dir;
+	}
+
+	for(i = 0; i < candidate_count; i++)
+	{
+		relative_dir = candidate_dirs[i];
+		while(*relative_dir == '/')
+			relative_dir++;
+		if(!relative_dir[0])
+			written = snprintf(picpath, sizeof(picpath), "%s/%s.bmp", Launcher_ThumbnailFolder(), title);
+		else
+			written = snprintf(picpath, sizeof(picpath), "%s/%s/%s.bmp", Launcher_ThumbnailFolder(), relative_dir, title);
+		if(written > 0 && (u32)written < sizeof(picpath) && Launcher_LoadThumbnailFile(picpath, dst))
+			return 1;
+	}
+	return 0;
 }
 
 /* An optional per-extension image can be placed at CUSTOM/<extension>.bmp.
@@ -8082,12 +8143,32 @@ static void Launcher_ActivateThumbnailWorkspace(u32 mode)
 	launcher_thumbnail_workspace_mode = (u8)mode;
 }
 
+typedef struct
+{
+	const TCHAR *path;
+	u8 expect_directory;
+} LauncherIndexedNameContext;
+
+static int Launcher_ResolveIndexedName(void *opaque, const char *identity,
+	char *out_name, size_t out_name_capacity)
+{
+	const LauncherIndexedNameContext *context = (const LauncherIndexedNameContext*)opaque;
+	TCHAR resolved_alias[13];
+	u8 attributes = 0;
+
+	if(!context || !context->path || out_name_capacity > (size_t)0xFFFFFFFFU ||
+		!Launcher_ResolveDirectoryEntry(context->path, identity,
+		out_name, (u32)out_name_capacity, resolved_alias, sizeof(resolved_alias), 0, &attributes))
+		return 0;
+	return ((attributes & AM_DIR) != 0) == (context->expect_directory != 0);
+}
+
 static u32 Launcher_LoadThumbDataForIndex(u32 absolute_index, u8 *thumb_data)
 {
 	TCHAR *name = 0;
 	TCHAR rom_dir[MAX_path_len];
-	TCHAR alias[13];
-	u8 attributes;
+	TCHAR identity_alias[13];
+	LauncherIndexedNameContext name_context;
 	const u8 *known_gamecode = 0;
 	u32 virtual_index = 0;
 	u32 total_entries = Launcher_GetTotalEntries();
@@ -8116,12 +8197,17 @@ static u32 Launcher_LoadThumbDataForIndex(u32 absolute_index, u8 *thumb_data)
 
 	if(absolute_index < folder_total)
 	{
+		FM_Folder_FS *record = &pFolder[absolute_index];
+		const TCHAR *identity = Launcher_FolderIdentityName(record);
+
 		/* Folders retain their custom named artwork behavior; ROMs inside them
 		   resolve against the matching relative directory after navigation. */
-		if(Launcher_ResolveDirectoryEntry(currentpath,
-			Launcher_FolderIdentityName(&pFolder[absolute_index]), launcher_resolved_entry_name,
-			sizeof(launcher_resolved_entry_name), alias, sizeof(alias), 0, &attributes) &&
-			(attributes & AM_DIR))
+		name_context.path = currentpath;
+		name_context.expect_directory = 1;
+		if(LauncherCopyIndexedNameOrResolve(record->filename, record->flags,
+			FM_ENTRY_ALIAS_DISPLAY, identity, launcher_resolved_entry_name,
+			sizeof(launcher_resolved_entry_name), Launcher_ResolveIndexedName,
+			&name_context))
 		{
 			Launcher_CustomThumbFileName(launcher_resolved_entry_name, launcher_custom_thumb_name,
 				sizeof(launcher_custom_thumb_name));
@@ -8137,15 +8223,22 @@ static u32 Launcher_LoadThumbDataForIndex(u32 absolute_index, u8 *thumb_data)
 			known_gamecode = launcher_virtual_gamecode[virtual_index];
 		if(virtual_index >= 10 || !Launcher_ResolveFullPath(p_recently_play[virtual_index],
 			sizeof(p_recently_play[virtual_index]), rom_dir, sizeof(rom_dir),
-			launcher_resolved_entry_name, sizeof(launcher_resolved_entry_name), alias, sizeof(alias), 0))
+			launcher_resolved_entry_name, sizeof(launcher_resolved_entry_name),
+			identity_alias, sizeof(identity_alias), 0))
 			return 0;
 		name = launcher_resolved_entry_name;
 	}
 	else
 	{
-		if(!Launcher_ResolveDirectoryEntry(currentpath,
-			Launcher_FileIdentityName(&pFilename_buffer[absolute_index - folder_total]),
-			launcher_resolved_entry_name, sizeof(launcher_resolved_entry_name), alias, sizeof(alias), 0, 0))
+		FM_FILE_FS *record = &pFilename_buffer[absolute_index - folder_total];
+		const TCHAR *identity = Launcher_FileIdentityName(record);
+
+		name_context.path = currentpath;
+		name_context.expect_directory = 0;
+		if(!LauncherCopyIndexedNameOrResolve(record->filename, record->flags,
+			FM_ENTRY_ALIAS_DISPLAY, identity, launcher_resolved_entry_name,
+			sizeof(launcher_resolved_entry_name), Launcher_ResolveIndexedName,
+			&name_context))
 			return 0;
 		name = launcher_resolved_entry_name;
 		strncpy(rom_dir, currentpath, sizeof(rom_dir) - 1);

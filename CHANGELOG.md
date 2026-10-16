@@ -1,5 +1,12 @@
 # Changelog
 
+## DS Style v7.4.5b (untested prerelease)
+
+- Fixed mirrored artwork lookup when ROM and artwork directory trees assign different SFN aliases to the same LFN folders.
+- Avoided repeated directory scans when loading thumbnails for names already stored completely in the browser index; clipped long names retain their alias-resolution fallback.
+- Includes the BIOS-Off reset handoff, long directory names in the browser title bar, and the configurable browser wrap-around option from v7.4.5.
+- This build has not been tested on a physical cartridge. Treat it as an experimental prerelease and retain a known-good kernel for recovery.
+
 ## DS Style v7.4.4 (untested prerelease)
 
 - Preserved full long-filename identity for selection, launch, save paths, and artwork while keeping the directory index within its reserved PSRAM window.

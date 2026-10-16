@@ -5,6 +5,8 @@
 #include "ff.h"
 #include "diskio.h"
 #include "launcher_path_policy.h"
+#include "launcher_artwork_path.h"
+#include "launcher_indexed_name.h"
 
 #define TEST_SECTORS 4096U
 #define SECTOR_SIZE 512U
@@ -314,6 +316,272 @@ static void test_long_directory_title_resolution(void)
 	check(found, "directory enumeration returns the full title-bar LFN");
 }
 
+static int resolve_artwork_directory_component(void *context,
+	const char *parent_path, const char *component,
+	char *resolved_name, size_t resolved_name_capacity)
+{
+	char fatfs_parent[288];
+	DIR dir;
+	FILINFO info;
+	int found = 0;
+	size_t length;
+
+	(void)context;
+	if(!resolved_name || !resolved_name_capacity ||
+		snprintf(fatfs_parent, sizeof(fatfs_parent), "0:%s", parent_path) >= (int)sizeof(fatfs_parent) ||
+		f_opendir(&dir, fatfs_parent) != FR_OK)
+		return 0;
+	while(f_readdir(&dir, &info) == FR_OK && info.fname[0])
+	{
+		if(strcmp(component, info.fname) != 0 &&
+			(!info.altname[0] || strcmp(component, info.altname) != 0))
+			continue;
+		if(found || !(info.fattrib & AM_DIR))
+		{
+			found = 0;
+			break;
+		}
+		length = strlen(info.fname);
+		if(length >= resolved_name_capacity)
+			break;
+		memcpy(resolved_name, info.fname, length + 1);
+		found = 1;
+	}
+	check(f_closedir(&dir) == FR_OK, "close directory after artwork path resolution");
+	return found;
+}
+
+static void test_mirrored_artwork_directory_resolution(void)
+{
+	static const char long_directory[] = "Game Boy Color";
+	static const char nested_directory[] = "Commercial Releases";
+	char directory_alias[13];
+	char nested_alias[13];
+	char artwork_alias[13];
+	char artwork_nested_alias[13];
+	char alias_rom_dir[64];
+	char resolved_rom_dir[256];
+	char resolved_name[256];
+	char mirror_path[384];
+	char alias_mirror_path[384];
+	char legacy_art_parent[256];
+	char legacy_art_dir[256];
+	char legacy_art_path[384];
+	char short_resolved_path[256];
+	FILINFO info;
+	int written;
+
+	check(f_mkdir("0:/ROMS") == FR_OK, "create the ROM root directory");
+	check(f_mkdir("0:/ROMS/Game Boy Color Alt") == FR_OK,
+		"create a colliding GBC-like directory before the target");
+	check(f_mkdir("0:/ROMS/Game Boy Color") == FR_OK,
+		"create a Game Boy Color directory with an LFN");
+	find_alias_in_directory("0:/ROMS", long_directory, directory_alias,
+		sizeof(directory_alias));
+	check(f_mkdir("0:/ROMS/Game Boy Color/Commercial Releases Alt") == FR_OK,
+		"create a colliding nested directory before the target");
+	check(f_mkdir("0:/ROMS/Game Boy Color/Commercial Releases") == FR_OK,
+		"create a nested long-name ROM directory");
+	find_alias_in_directory("0:/ROMS/Game Boy Color", nested_directory,
+		nested_alias, sizeof(nested_alias));
+	check(snprintf(alias_rom_dir, sizeof(alias_rom_dir), "/ROMS/%s/%s",
+		directory_alias, nested_alias) <
+		(int)sizeof(alias_rom_dir), "build the launcher's SFN-based ROM directory path");
+	check(LauncherArtworkResolveDirectoryPath(alias_rom_dir,
+		resolved_rom_dir, sizeof(resolved_rom_dir), resolved_name, sizeof(resolved_name),
+		resolve_artwork_directory_component, 0),
+		"resolve every SFN directory component for mirrored artwork");
+	check(strcmp(resolved_rom_dir, "/ROMS/Game Boy Color/Commercial Releases") == 0,
+		"all artwork path components use their visible LFNs");
+
+	check(f_mkdir("0:/ARTWORK") == FR_OK, "create the isolated artwork fixture directory");
+	check(f_mkdir("0:/ARTWORK/IMGS") == FR_OK, "create the wide artwork root");
+	check(f_mkdir("0:/ARTWORK/IMGS/ROMS") == FR_OK,
+		"create the mirrored ROM root directory");
+	check(f_mkdir("0:/ARTWORK/IMGS/ROMS/Game Boy Color") == FR_OK,
+		"create the mirrored LFN artwork directory");
+	check(f_mkdir("0:/ARTWORK/IMGS/ROMS/Game Boy Color/Commercial Releases") == FR_OK,
+		"create the nested mirrored LFN artwork directory");
+	find_alias_in_directory("0:/ARTWORK/IMGS/ROMS", long_directory,
+		artwork_alias, sizeof(artwork_alias));
+	find_alias_in_directory("0:/ARTWORK/IMGS/ROMS/Game Boy Color", nested_directory,
+		artwork_nested_alias, sizeof(artwork_nested_alias));
+	check(strcmp(directory_alias, artwork_alias) != 0 &&
+		strcmp(nested_alias, artwork_nested_alias) != 0,
+		"colliding siblings make the ROM and artwork trees generate different SFN aliases");
+	written = snprintf(mirror_path, sizeof(mirror_path),
+		"0:/ARTWORK/IMGS%s/Oracle of Ages.bmp", resolved_rom_dir);
+	check(written > 0 && (size_t)written < sizeof(mirror_path),
+		"build the LFN mirrored-artwork file path");
+	write_file(mirror_path, "art");
+	written = snprintf(alias_mirror_path, sizeof(alias_mirror_path),
+		"0:/ARTWORK/IMGS/ROMS/%s/%s/Oracle of Ages.bmp",
+		directory_alias, nested_alias);
+	check(written > 0 && (size_t)written < sizeof(alias_mirror_path),
+		"build the pre-fix SFN mirrored-artwork file path");
+	check(f_stat(alias_mirror_path, &info) != FR_OK,
+		"the original SFN path misses artwork stored under the LFN mirror");
+	check(f_stat(mirror_path, &info) == FR_OK,
+		"the canonical LFN path finds the mirrored Game Boy Color artwork");
+
+	check(f_mkdir("0:/ROMS/GB") == FR_OK, "create a short-name GB directory");
+	check(LauncherArtworkResolveDirectoryPath("/ROMS/GB",
+		short_resolved_path, sizeof(short_resolved_path), resolved_name, sizeof(resolved_name),
+		resolve_artwork_directory_component, 0),
+		"resolve an existing short-name ROM directory");
+	check(strcmp(short_resolved_path, "/ROMS/GB") == 0,
+		"short-name artwork paths remain unchanged by canonicalization");
+
+	check(snprintf(legacy_art_parent, sizeof(legacy_art_parent),
+		"0:/ARTWORK/IMGS/ROMS/%s", directory_alias) <
+		(int)sizeof(legacy_art_parent),
+		"build the first-level legacy SFN artwork directory path");
+	check(f_mkdir(legacy_art_parent) == FR_OK,
+		"create a legacy SFN-style first-level artwork directory");
+	check(snprintf(legacy_art_dir, sizeof(legacy_art_dir),
+		"%s/%s", legacy_art_parent, nested_alias) <
+		(int)sizeof(legacy_art_dir),
+		"build a legacy SFN-style artwork directory path");
+	check(f_mkdir(legacy_art_dir) == FR_OK,
+		"create an SFN-style legacy artwork directory");
+	written = snprintf(legacy_art_path, sizeof(legacy_art_path),
+		"%s/Legacy Artwork.bmp", legacy_art_dir);
+	check(written > 0 && (size_t)written < sizeof(legacy_art_path),
+		"build a legacy SFN artwork path");
+	write_file(legacy_art_path, "legacy");
+	check(f_stat(legacy_art_path, &info) == FR_OK,
+		"the legacy SFN-style mirror candidate remains accessible");
+}
+
+typedef struct
+{
+	const char *path;
+	unsigned int resolver_calls;
+	unsigned int entries_examined;
+} IndexedNameMetrics;
+
+static int resolve_indexed_name(void *opaque, const char *identity,
+	char *out_name, size_t out_name_capacity)
+{
+	IndexedNameMetrics *metrics = (IndexedNameMetrics*)opaque;
+	DIR dir;
+	FILINFO info;
+	FRESULT result;
+	size_t length;
+	int found = 0;
+	int ambiguous = 0;
+
+	metrics->resolver_calls++;
+	if(!metrics->path || !identity || !out_name || !out_name_capacity ||
+		f_opendir(&dir, metrics->path) != FR_OK)
+		return 0;
+	while((result = f_readdir(&dir, &info)) == FR_OK && info.fname[0])
+	{
+		metrics->entries_examined++;
+		if(strcmp(identity, info.fname) != 0 &&
+			(!info.altname[0] || strcmp(identity, info.altname) != 0))
+			continue;
+		if(found && strcmp(out_name, info.fname) != 0)
+		{
+			ambiguous = 1;
+			break;
+		}
+		if(!found)
+		{
+			length = strlen(info.fname);
+			if(length >= out_name_capacity)
+				break;
+			memcpy(out_name, info.fname, length + 1);
+			found = 1;
+		}
+	}
+	if(f_closedir(&dir) != FR_OK)
+		return 0;
+	return found && !ambiguous && result == FR_OK;
+}
+
+static unsigned int run_indexed_name_performance_case(unsigned int file_count,
+	const char *directory_path)
+{
+	static const unsigned int clipped_name_flag = 1U; /* FM_ENTRY_ALIAS_DISPLAY */
+	char path[128];
+	char filename[128];
+	char long_name[128];
+	char truncated_name[100];
+	char alias[13];
+	char resolved_name[256];
+	DIR dir;
+	FILINFO info;
+	FRESULT result;
+	IndexedNameMetrics metrics;
+	unsigned int created;
+	unsigned int indexed = 0;
+	int written;
+
+	check(f_mkdir(directory_path) == FR_OK, "create an indexed-name performance folder");
+	for(created = 0; created < file_count; created++)
+	{
+		written = snprintf(filename, sizeof(filename), "Game Collection Item %03u.gba", created);
+		check(written > 0 && (size_t)written < sizeof(filename), "format a performance-fixture game name");
+		written = snprintf(path, sizeof(path), "%s/%s", directory_path, filename);
+		check(written > 0 && (size_t)written < sizeof(path), "format a performance-fixture game path");
+		write_file(path, "rom");
+	}
+
+	strcpy(long_name, "Long Performance Entry ");
+	memset(long_name + strlen(long_name), 'x', 88);
+	strcpy(long_name + strlen("Long Performance Entry ") + 88, ".gba");
+	written = snprintf(path, sizeof(path), "%s/%s", directory_path, long_name);
+	check(written > 0 && (size_t)written < sizeof(path), "format the clipped performance-fixture path");
+	write_file(path, "long rom");
+	find_alias_in_directory(directory_path, long_name, alias, sizeof(alias));
+
+	memset(&metrics, 0, sizeof(metrics));
+	metrics.path = directory_path;
+	check(f_opendir(&dir, directory_path) == FR_OK, "open performance fixture for index enumeration");
+	while((result = f_readdir(&dir, &info)) == FR_OK && info.fname[0])
+	{
+		if(strcmp(info.fname, long_name) == 0)
+			continue;
+		check(LauncherCopyIndexedNameOrResolve(info.fname, 0, clipped_name_flag,
+			info.altname[0] ? info.altname : info.fname, resolved_name,
+			sizeof(resolved_name), resolve_indexed_name, &metrics),
+			"copy a complete indexed LFN without rescanning its directory");
+		check(strcmp(resolved_name, info.fname) == 0,
+			"the thumbnail fast path preserves the indexed LFN");
+		indexed++;
+	}
+	check(f_closedir(&dir) == FR_OK, "close performance fixture after index enumeration");
+	check(result == FR_OK && indexed == file_count,
+		"every ordinary performance-fixture filename was indexed");
+	check(metrics.resolver_calls == 0 && metrics.entries_examined == 0,
+		"complete indexed LFNs perform no per-thumbnail directory resolver scan");
+
+	strncpy(truncated_name, long_name, sizeof(truncated_name) - 1);
+	truncated_name[sizeof(truncated_name) - 1] = '\0';
+	check(strlen(long_name) >= sizeof(truncated_name) - 1,
+		"performance fixture includes an LFN clipped by the 99-byte index");
+	check(LauncherCopyIndexedNameOrResolve(truncated_name, clipped_name_flag,
+		clipped_name_flag, alias, resolved_name, sizeof(resolved_name),
+		resolve_indexed_name, &metrics),
+		"clipped index names retain the alias-to-LFN resolver");
+	check(strcmp(resolved_name, long_name) == 0,
+		"the resolver restores the complete LFN for clipped entries");
+	check(metrics.resolver_calls == 1 && metrics.entries_examined >= file_count,
+		"only the clipped entry performs one ambiguity-checked directory scan");
+	return metrics.entries_examined;
+}
+
+static void test_indexed_name_thumbnail_performance(void)
+{
+	unsigned int small_scan_entries = run_indexed_name_performance_case(16, "0:/PERF16");
+	unsigned int large_scan_entries = run_indexed_name_performance_case(96, "0:/PERF96");
+	check(large_scan_entries > small_scan_entries,
+		"the retained long-name fallback scan reflects folder size");
+	printf("indexed-name resolver scans: 16 files -> %u entries; 96 files -> %u entries; complete indexed LFNs -> 0 scans\n",
+		small_scan_entries, large_scan_entries);
+}
+
 int main(void)
 {
 	memset(disk, 0, sizeof(disk));
@@ -321,7 +589,9 @@ int main(void)
 	test_legacy_path_policy();
 	test_long_name_alias_operations();
 	test_long_directory_title_resolution();
+	test_mirrored_artwork_directory_resolution();
 	test_maximum_save_backup_path();
+	test_indexed_name_thumbnail_performance();
 	puts("FatFs long-name identity scenarios passed.");
 	return 0;
 }
