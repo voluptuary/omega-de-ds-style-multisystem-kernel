@@ -1,5 +1,11 @@
 # Changelog
 
+## DS Style v7.4.4 (untested prerelease)
+
+- Preserved full long-filename identity for selection, launch, save paths, and artwork while keeping the directory index within its reserved PSRAM window.
+- Moved the launcher user stack to EWRAM and bounded the heap below it.
+- This build has not been tested on a physical cartridge. Treat it as an experimental prerelease and retain a known-good kernel for recovery.
+
 ## DS Style v7.4.1
 
 - Prevented failed SD reads from loading stale data into saves, save states, or sectors.
