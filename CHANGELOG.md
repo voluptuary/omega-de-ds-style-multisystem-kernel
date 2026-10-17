@@ -2,8 +2,7 @@
 
 ## DS Style v7.4.6-test (hardware-test candidate)
 
-- Built from the current audit branch with the EWRAM user-stack relocation reverted and S71 VBlank masking retained for hardware verification.
-- Uses the original IWRAM user stack; linked static sections end at `0x03007C20`, leaving only 736 bytes before the stack top at `0x03007F00`. The previously documented thumbnail call path needs substantially more stack, so this rollback reintroduces the F-026 overlap risk; runtime stack high-water has not been measured.
+- Built from the current audit branch with the v7.4.5b EWRAM user-stack relocation and S71 VBlank masking retained for hardware verification.
 - This candidate has not been tested on a physical cartridge and is not a published release. Keep a known-good kernel available for recovery.
 
 ## DS Style v7.4.1

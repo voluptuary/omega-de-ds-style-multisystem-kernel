@@ -78,7 +78,7 @@ SoftReset:
 		ldr		r6, =0x03007FFA
 		mov		r7, #0x0
 		str		r7, [r6, #0]
-		ldr		r1, =0x03007f00
+		ldr		r1, =__sp_usr
 		mov		sp, r1
 		swi		0
 
@@ -99,7 +99,7 @@ HardReset:
 	ldr		r3, =0x04000208
 	mov		r2, #0
 	str		r2, [r3, #0]
-	ldr		r1, =0x3007f00
+	ldr		r1, =__sp_usr
 	mov		SP, r1
 	swi     0x26
 
