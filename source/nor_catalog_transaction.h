@@ -24,4 +24,15 @@ static inline int NOR_CommitCatalogSlot(void *catalog_slot, const void *new_slot
 	return 1;
 }
 
+/* Keep the runtime catalog empty after a physical NOR format, even on save failure. */
+static inline int NOR_ClearCatalogAndPersist(void *catalog, size_t catalog_size,
+	NOR_CatalogPersistCallback persist, void *persist_context)
+{
+	if(!catalog || !catalog_size || !persist)
+		return 0;
+
+	memset(catalog, 0, catalog_size);
+	return persist(persist_context);
+}
+
 #endif

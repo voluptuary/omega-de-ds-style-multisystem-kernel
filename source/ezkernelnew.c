@@ -16577,7 +16577,8 @@ u8 NOR_list_MENU(u32 show_offset,	u32 file_select)
 			else if(action_line==2){ //
 				//format all
 				UIAudio_PlayAccept();
-						if(FormatNor() == 2)
+						u8 format_result = FormatNor();
+						if(format_result == 2 || format_result == 3)
 							Show_error_num(3);
 				return 1;
 			}

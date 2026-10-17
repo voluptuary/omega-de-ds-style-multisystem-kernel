@@ -247,7 +247,9 @@ u8 FormatNor()
 		if (keys & KEY_A) {
 			if(!Chip_Erase())
 				return 2;
-			memset(pNorFS,00,sizeof(FM_NOR_FS)*MAX_NOR);
+			if(!NOR_ClearCatalogAndPersist(pNorFS,
+				sizeof(FM_NOR_FS)*MAX_NOR, NOR_PersistCatalog, pNorFS))
+				return 3;
 			return 1;
 		}
 		else if(keys & KEY_B) {
