@@ -36,6 +36,7 @@ CFLAGS	:=	-g -Wall -O\
 		-mcpu=arm7tdmi -mtune=arm7tdmi\
  		-fomit-frame-pointer\
 		-ffast-math \
+		-ffunction-sections -fdata-sections \
 		$(ARCH)
 
 CFLAGS	+=	$(INCLUDE)
@@ -47,8 +48,10 @@ ASFLAGS	:=	-g $(ARCH)
 GBA_USER_STACK_TOP := 0x0203F000
 GBA_HEAP_END := 0x0203C000
 LDFLAGS	=	-g $(ARCH) -Wl,-Map,$(notdir $*.map) \
+		-Wl,--gc-sections \
 		-Wl,--defsym,__sp_usr=$(GBA_USER_STACK_TOP) \
 		-Wl,--defsym,__eheap_end=$(GBA_HEAP_END)
+KERNEL_SIZE_LIMIT := 2097152
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
@@ -138,6 +141,14 @@ else
 #---------------------------------------------------------------------------------
 
 $(OUTPUT).gba	:	$(OUTPUT).elf
+	$(SILENTCMD)$(OBJCOPY) -O binary $< $@
+	@echo built ... $(notdir $@)
+	$(SILENTCMD)gbafix $@ -t$(GAME_TITLE) -c$(GAME_CODE) -m$(MAKER_CODE)
+	@rom_size=$$(wc -c < "$@"); \
+	if [ "$$rom_size" -gt "$(KERNEL_SIZE_LIMIT)" ]; then \
+		echo "Kernel image exceeds the 2 MiB compatibility limit: $$rom_size bytes." >&2; \
+		exit 1; \
+	fi
 
 $(OUTPUT).elf	:	$(OFILES)
 

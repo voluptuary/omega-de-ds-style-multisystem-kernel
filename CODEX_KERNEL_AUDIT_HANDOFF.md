@@ -1,5 +1,12 @@
 # DS Style Kernel Audit — Standalone Handoff
 
+## Current checkpoint — 2 MiB-capped candidate build (2026-10-17)
+
+- The production Makefile retains the existing `-O` optimization level and adds `-ffunction-sections -fdata-sections` with linker `--gc-sections`, allowing unreferenced sections to be discarded without globally changing code-generation optimization. The final raw `.gba` size is checked after `gbafix`; builds larger than 2,097,152 bytes fail. A forced build using `KERNEL_SIZE_LIMIT=1` confirmed that the guard rejects an oversized image.
+- Built and placed `files/candidate/7.4.6/ezkernelnew.bin`. It is byte-identical to `omega-de-ds-style-multisystem-kernel.gba`: 2,067,120 bytes, 30,032 bytes under the hard limit, SHA-256 `bfeae962fb7fe469b96352e98726b9a353a3cfc71ff4272add2c1f582def4f8c`.
+- This is a size-compliant test candidate, not a hardware-validated fix. The reduction addresses the image crossing the documented kernel-slot boundary, but does not establish that overlength caused the reported white screen, settings loss, or browsing slowdown. No flash or physical hardware test was performed. Preserve all v7.4.5b behavior and keep all future fixes hardware-revision agnostic.
+- Validation passed: production build, cap-guard negative check, browser installer scenarios, JavaScript syntax, Cppcheck, whitespace check, and all seven focused firmware host suites (NOR status/catalog transaction/catalog recovery, save-file, cheat rows, launcher navigation, and FatFs long-name identity). The cheat-row host fixture emits its existing signedness/unused-parameter warnings. Host tests do not prove physical hardware behavior.
+
 ## Current checkpoint — reported white screen and image-size boundary (2026-10-17)
 
 - The owner reports that `files/candidate/7.4.6/ezkernelnew.bin` also boots to a white screen. The hardware revision used for this attempt was not stated.

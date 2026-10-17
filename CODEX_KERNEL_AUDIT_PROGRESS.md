@@ -1,5 +1,12 @@
 # Codex Kernel Audit Progress
 
+## 2026-10-17 — Fit candidate within the 2 MiB kernel limit
+
+- **Size strategy:** kept the existing `-O` compiler optimization level and enabled function/data sections plus linker garbage collection (`-ffunction-sections -fdata-sections`, `--gc-sections`). This removes unreferenced linked sections rather than applying the broader `-Os` code-generation change, minimizing impact on runtime code paths while preserving the requested post-v7.4.5b source changes.
+- **Build enforcement:** the production Makefile now checks the final raw image size after `gbafix` and fails above 2,097,152 bytes. A forced build with `KERNEL_SIZE_LIMIT=1` failed as expected, confirming the guard is active.
+- **Candidate:** rebuilt `files/candidate/7.4.6/ezkernelnew.bin` from the production `.gba`; both are 2,067,120 bytes (30,032 bytes below the limit), SHA-256 `bfeae962fb7fe469b96352e98726b9a353a3cfc71ff4272add2c1f582def4f8c`, and byte-identical. This keeps the complete kernel image inside the documented allocation and avoids the previously observed linked startup data crossing the 2 MiB boundary.
+- **Validation/disposition:** target build and cap-guard negative check pass. Browser installer scenarios, JavaScript syntax, Cppcheck, whitespace checks, and all seven focused host suites pass (NOR status/catalog transaction/catalog recovery, save-file, cheat rows, launcher navigation, and FatFs long-name identity). The cheat-row host fixture emits its existing signedness/unused-parameter warnings. This does not prove boot, settings preservation, or menu performance on either hardware revision; no hardware test or flash was performed. Continue only with revision-agnostic work and retain the 2 MiB hard cap.
+
 ## 2026-10-17 — White-screen report and kernel image boundary
 
 - **Owner report:** the `files/candidate/7.4.6/ezkernelnew.bin` build also boots to a white screen. The hardware revision used for this specific attempt was not stated; treat it as direct failure evidence for this artifact, not proof of a board-specific cause.

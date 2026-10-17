@@ -3,6 +3,8 @@
 ## DS Style v7.4.6-test (hardware-test candidate)
 
 - Built from the current audit branch with the v7.4.5b EWRAM user-stack relocation and S71 VBlank masking retained for hardware verification.
+- Reduced the raw kernel image to 2,067,120 bytes using linker removal of unreferenced sections, and added a build-time check enforcing the 2 MiB kernel-image limit.
+- The size-capped candidate is available at `files/candidate/7.4.6/ezkernelnew.bin`. This is a test build only; boot, settings preservation and menu performance have not been verified on hardware.
 - This candidate has not been tested on a physical cartridge and is not a published release. Keep a known-good kernel available for recovery.
 
 ## DS Style v7.4.1
