@@ -1,5 +1,14 @@
 # DS Style Kernel Audit — Standalone Handoff
 
+## Current checkpoint — reported white screen and image-size boundary (2026-10-17)
+
+- The owner reports that `files/candidate/7.4.6/ezkernelnew.bin` also boots to a white screen. The hardware revision used for this attempt was not stated.
+- Same-toolchain devkitARM 16.1.0 builds: v7.4.5b source `0f5fe5a` = 2,096,272 bytes (880 below 2 MiB, matching the published asset size); `e2a8d97` = 2,094,120; first measured over-limit post-release source `2726d13` = 2,097,192 (40 over); test snapshot `c2a2faf` = 2,097,256 (104 over); current requested artifact = 2,097,280 (128 over). The overage is therefore in `c2a2faf` itself, not only from later audit work.
+- The vendor board allocation table reviewed for F-032 documents a kernel range at x16 word addresses `0x020000` to `<0x120000`, or 2 MiB. The v7.4.6-test ELF's `.init_array` LMA is `0x08200058`, `.fini_array` LMA `0x0820005C`, and startup's initialized-data copy range ends at `0x08200060`, beyond the `0x08200000` boundary. Current candidate data extends to `0x08200078`. Startup copies this range and invokes `__libc_init_array`; if the updater enforces the documented kernel-slot limit, required startup data can be absent. This is a strong generic white-screen lead, but exact external bootloader write/read bounds are not available in this repository, so causality is not proven.
+- The requested `.bin` is the raw `.gba` output under a cartridge filename, matching this repository's `build.bat` and historical raw `files/ezkernelnew.bin` that the owner reported booting. Upstream vendor instructions separately link the `.gba` with `image.bin` into a stock update package; its combined size is not comparable to the raw kernel slot. Keep packaging format distinct from raw-image size.
+- The first measured over-limit build is the large post-release source checkpoint `2726d13`, which bundles multiple source changes; no individual function is yet isolated as the cause. Preserve all v7.4.5b behavior. Do not use a hardware-revision-specific workaround.
+- Next: establish whether the raw kernel updater truncates/limits the image to 2 MiB; then find a surgical, hardware-agnostic way to fit within that region while preserving release behavior and justified changes. Add a size guard after confirming the limit. Treat settings loss and the Rev. B browsing slowdown as separate findings; image overlength alone does not explain either conclusively. No flash operation was performed here.
+
 ## Current checkpoint — memory hypothesis and corrected candidate (2026-10-17)
 
 - The owner asked whether original Omega DE might run out of working memory on v7.4.6-test while DE Rev. B has extra headroom. This is an investigation hypothesis only; do not assume a revision-specific memory difference or pursue a board-specific fix.
