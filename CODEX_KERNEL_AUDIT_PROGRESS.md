@@ -1,5 +1,13 @@
 # Codex Kernel Audit Progress
 
+## 2026-10-17 20:06 UTC — F-036 save-overwrite caller review
+
+- **Phase/subsystem:** SD save replacement and recovery callers. **Objective:** continue the revision-agnostic audit after no primary F-022 device/timing evidence was available; determine whether F-036's known destructive overwrite failure is contained or silently accepted by its callers.
+- **Call-site evidence:** `Process_savefile()` creates a save through `SavefileWrite()` only when `f_open(FA_OPEN_EXISTING)` returns `FR_NO_FILE`; an I/O/path error does not trigger creation. Existing-save replacement instead occurs in `Check_save_flag()` and manual NOR FRAM-save flow through `FRAM_save_op(2)`. Both paths treat `Save_savefile()` failure as an error. `Check_save_flag()` clears the pending recovery metadata only after a successful save or explicit user discard; on save failure it displays error 5 and leaves recovery pending for retry.
+- **Fault-injection result:** `bash scripts/test-savefile-host.sh` passes. The exact `Save_savefile()` body is included in the host test; the injected write fault after opening a pre-existing save confirms the operation reports failure but the old file is no longer discoverable. FatFs `FA_CREATE_ALWAYS` truncates before writing, and the cleanup `f_unlink()` removes the incomplete replacement; neither restores the prior data. The other tested initialization/write-error paths still remove partial newly-created saves.
+- **Disposition:** caller error reporting and recovery-flag retention are correct, but the pre-existing save is still lost on overwrite failure. No source change: a rename-only adjustment is not sufficient for power-loss/full-volume cases, and no complete, tested journal/recovery protocol with established SD interruption assumptions is available. Do not claim F-036 fixed; keep any future solution hardware-revision agnostic and preserve v7.4.5b behavior. No physical SD/hardware test occurred.
+- **Next:** continue a bounded review of generic findings only where evidence or fault injection can establish a safe outcome. Keep F-022 paused pending primary accepted-device and complete timing evidence; do not add guessed timeouts, board-specific branches, or undocumented storage offsets.
+
 ## 2026-10-17 — Fit candidate within the 2 MiB kernel limit
 
 - **Size strategy:** kept the existing `-O` compiler optimization level and enabled function/data sections plus linker garbage collection (`-ffunction-sections -fdata-sections`, `--gc-sections`). This removes unreferenced linked sections rather than applying the broader `-Os` code-generation change, minimizing impact on runtime code paths while preserving the requested post-v7.4.5b source changes.
