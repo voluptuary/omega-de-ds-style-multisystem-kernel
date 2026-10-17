@@ -1,5 +1,12 @@
 # Codex Kernel Audit Progress
 
+## 2026-10-17 20:34 UTC — v7.4.6 release published and verified
+
+- **Release:** created stable, non-draft/non-prerelease release `DS Style v7.4.6 - Omega Definitive Edition` at https://github.com/voluptuary/omega-de-ds-style-multisystem-kernel/releases/tag/v7.4.6. It is marked Latest and includes the single expected `ezkernelnew.bin` asset. The release notes were checked after publication and corrected to contain plain text only.
+- **Source/tag:** release commit `11ddf93fa04c33866f0bb563500427e33f18c6f0` is pushed to `origin/copilot`; annotated tag `v7.4.6` points to that exact commit. The `FrankieT19` upstream was not modified.
+- **Asset verification:** downloaded the published asset and confirmed it is 2,067,120 bytes with SHA-256 `d44665bcc57aec05cacc582815b39c2a0b4377f2803791933593a04a84aa5250`, byte-identical to `files/candidate/7.4.6/ezkernelnew.bin` and the rebuilt `.gba`.
+- **Worktree:** release source/changelog and pre-publication audit record were committed. Only the new post-release verification update is pending; user-provided `files/agent_prompt.txt` remains untracked and untouched.
+
 ## 2026-10-17 20:32 UTC — v7.4.6 hardware validation and release preparation
 
 - **Owner's hardware report:** the v7.4.6 candidate passed hardware tests, and menu performance appears on par with v7.4.5b. Further edge-case testing may reveal issues. Record this as owner-reported validation; do not imply exhaustive testing or claim an exact revision matrix beyond what was stated.
@@ -7,7 +14,7 @@
 - **Release-note scope:** describes safer first-time save creation and clearer failure handling without claiming existing SD-save preservation; improved cartridge-flash error handling and removal of stale game-list entries after successful format; corrected cheat-file parsing; and the 2 MiB compatibility limit.
 - **Validation:** forced `make -B` PASS; `bash scripts/rebuild-and-verify-audit.sh` PASS (production build, browser scenarios, JavaScript syntax, whitespace, and Cppcheck); all seven focused host suites PASS (NOR status, catalog transaction/recovery, save-file, cheat rows, launcher navigation, FatFs long-name identity); final image banner, size, hash, and candidate equality verified. Cheat-row host extraction reports existing signedness/unused-parameter warnings. No physical test was repeated after changing only the five label bytes.
 - **Publication scope:** the release target is `origin` at `voluptuary/omega-de-ds-style-multisystem-kernel`; `upstream` is `FrankieT19/omega-de-ds-style-kernel` and must not be modified. The fork's current public release is v7.4.5 with a single `ezkernelnew.bin` asset. The user-provided `files/agent_prompt.txt` remains untracked and must not be staged.
-- **Next:** commit the source version-label and changelog updates plus these audit records, push `copilot` to `origin`, create tag/release v7.4.6 on the resulting commit, upload only the verified `ezkernelnew.bin`, and verify the remote tag/release asset size and SHA-256.
+- **Next:** completed as recorded in the 20:34 UTC publication checkpoint.
 
 ## 2026-10-17 20:06 UTC — F-036 save-overwrite caller review
 
