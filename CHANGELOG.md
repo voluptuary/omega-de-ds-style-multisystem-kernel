@@ -1,11 +1,22 @@
 # Changelog
 
-## DS Style v7.4.6-test (hardware-test candidate)
+## DS Style v7.4.6
 
-- Built from the current audit branch with the v7.4.5b EWRAM user-stack relocation and S71 VBlank masking retained for hardware verification.
-- Reduced the raw kernel image to 2,067,120 bytes using linker removal of unreferenced sections, and added a build-time check enforcing the 2 MiB kernel-image limit.
-- The size-capped candidate is available at `files/candidate/7.4.6/ezkernelnew.bin`. This is a test build only; boot, settings preservation and menu performance have not been verified on hardware.
-- This candidate has not been tested on a physical cartridge and is not a published release. Keep a known-good kernel available for recovery.
+DS Style v7.4.6 improves save and cartridge-flash handling while keeping the kernel within the supported 2 MiB size limit. The owner reports that hardware testing passed and menu performance is on par with v7.4.5b; further edge-case testing may still reveal issues.
+
+### Compatibility update
+
+- Kept the kernel image within the cartridge's 2 MiB limit.
+
+### Other fixes
+
+- Improved error handling for save creation and writes. Failed first-time saves no longer leave incomplete files behind, and errors that prevent checking an existing save are reported instead of being treated as a missing save.
+- Improved cartridge-flash operation checks and feedback, and update the game list after a successful format to remove stale entries.
+- Fixed cheat-file parsing so values from one entry cannot carry over into the next.
+
+These changes and fixes were completed with the assistance of AI.
+
+See the [full changelog](https://github.com/voluptuary/omega-de-ds-style-multisystem-kernel/blob/v7.4.6/CHANGELOG.md) for details.
 
 ## DS Style v7.4.1
 

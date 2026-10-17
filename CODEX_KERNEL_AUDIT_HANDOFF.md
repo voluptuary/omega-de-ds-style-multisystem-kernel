@@ -1,6 +1,14 @@
 # DS Style Kernel Audit — Standalone Handoff
 
-## Current checkpoint — 2 MiB-capped candidate build (2026-10-17)
+## Current checkpoint — v7.4.6 release preparation (2026-10-17)
+
+- The owner reports that the v7.4.6 candidate passed hardware testing and that menu performance is on par with v7.4.5b. Additional edge-case testing may still reveal issues; this is owner-reported device validation, not a claim that every use case has been exhausted.
+- The hardware-tested image was 2,067,120 bytes (SHA-256 `bfeae962fb7fe469b96352e98726b9a353a3cfc71ff4272add2c1f582def4f8c`). For release, only the embedded version label was changed from `v7.4.6-test` to `v7.4.6` (same-length string); a clean rebuild differs from the tested image in exactly those five label bytes. The release candidate remains 2,067,120 bytes, 30,032 bytes under the 2 MiB cap, SHA-256 `d44665bcc57aec05cacc582815b39c2a0b4377f2803791933593a04a84aa5250`. It is byte-identical to the rebuilt `.gba` and staged at `files/candidate/7.4.6/ezkernelnew.bin`.
+- The changelog now describes the actual save-creation/error-handling, cartridge-flash, cheat parsing, and size-limit changes in user-facing language. It does not claim that failed overwrites preserve the previous SD save; F-036 remains open.
+- Validation passed: forced `make -B`, `bash scripts/rebuild-and-verify-audit.sh`, all seven focused host suites, candidate size/banner/hash checks, and `git diff --check`. The cheat-row host fixture emits the existing signedness and unused-parameter warnings. No new hardware test was performed after the five-byte version-label-only change.
+- **Publication target:** push to `origin` (`voluptuary/omega-de-ds-style-multisystem-kernel`), not `upstream` (`FrankieT19/omega-de-ds-style-kernel`). The target fork's current release is v7.4.5 with a single `ezkernelnew.bin` asset. Keep the user-provided untracked `files/agent_prompt.txt` out of commits.
+
+## Prior checkpoint — 2 MiB-capped candidate before hardware results (2026-10-17)
 
 - The production Makefile retains the existing `-O` optimization level and adds `-ffunction-sections -fdata-sections` with linker `--gc-sections`, allowing unreferenced sections to be discarded without globally changing code-generation optimization. The final raw `.gba` size is checked after `gbafix`; builds larger than 2,097,152 bytes fail. A forced build using `KERNEL_SIZE_LIMIT=1` confirmed that the guard rejects an oversized image.
 - Built and placed `files/candidate/7.4.6/ezkernelnew.bin`. It is byte-identical to `omega-de-ds-style-multisystem-kernel.gba`: 2,067,120 bytes, 30,032 bytes under the hard limit, SHA-256 `bfeae962fb7fe469b96352e98726b9a353a3cfc71ff4272add2c1f582def4f8c`.

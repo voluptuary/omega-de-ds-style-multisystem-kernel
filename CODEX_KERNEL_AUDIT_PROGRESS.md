@@ -1,5 +1,14 @@
 # Codex Kernel Audit Progress
 
+## 2026-10-17 20:32 UTC — v7.4.6 hardware validation and release preparation
+
+- **Owner's hardware report:** the v7.4.6 candidate passed hardware tests, and menu performance appears on par with v7.4.5b. Further edge-case testing may reveal issues. Record this as owner-reported validation; do not imply exhaustive testing or claim an exact revision matrix beyond what was stated.
+- **Release artifact:** the hardware-tested candidate was 2,067,120 bytes, SHA-256 `bfeae962fb7fe469b96352e98726b9a353a3cfc71ff4272add2c1f582def4f8c`. Updated the embedded display label to `v7.4.6` using a same-length string and rebuilt. Byte comparison against the tested candidate shows exactly five differing bytes, all in that label; no code or layout changed. The final image is still 2,067,120 bytes, 30,032 bytes under the hard cap, SHA-256 `d44665bcc57aec05cacc582815b39c2a0b4377f2803791933593a04a84aa5250`. The candidate under `files/candidate/7.4.6/ezkernelnew.bin` is byte-identical to the rebuilt `.gba`.
+- **Release-note scope:** describes safer first-time save creation and clearer failure handling without claiming existing SD-save preservation; improved cartridge-flash error handling and removal of stale game-list entries after successful format; corrected cheat-file parsing; and the 2 MiB compatibility limit.
+- **Validation:** forced `make -B` PASS; `bash scripts/rebuild-and-verify-audit.sh` PASS (production build, browser scenarios, JavaScript syntax, whitespace, and Cppcheck); all seven focused host suites PASS (NOR status, catalog transaction/recovery, save-file, cheat rows, launcher navigation, FatFs long-name identity); final image banner, size, hash, and candidate equality verified. Cheat-row host extraction reports existing signedness/unused-parameter warnings. No physical test was repeated after changing only the five label bytes.
+- **Publication scope:** the release target is `origin` at `voluptuary/omega-de-ds-style-multisystem-kernel`; `upstream` is `FrankieT19/omega-de-ds-style-kernel` and must not be modified. The fork's current public release is v7.4.5 with a single `ezkernelnew.bin` asset. The user-provided `files/agent_prompt.txt` remains untracked and must not be staged.
+- **Next:** commit the source version-label and changelog updates plus these audit records, push `copilot` to `origin`, create tag/release v7.4.6 on the resulting commit, upload only the verified `ezkernelnew.bin`, and verify the remote tag/release asset size and SHA-256.
+
 ## 2026-10-17 20:06 UTC — F-036 save-overwrite caller review
 
 - **Phase/subsystem:** SD save replacement and recovery callers. **Objective:** continue the revision-agnostic audit after no primary F-022 device/timing evidence was available; determine whether F-036's known destructive overwrite failure is contained or silently accepted by its callers.
