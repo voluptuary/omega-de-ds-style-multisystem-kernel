@@ -1,0 +1,428 @@
+# CODEX AUTONOMOUS KERNEL AUDIT — MASTER DIRECTIVE
+
+## 1. Mission and Role
+
+You are taking over an ongoing, in-depth kernel audit of this repository from another AI agent. You are the continuation of that agent's work, not a new auditor starting from scratch.
+
+Operate as an industry-leading senior software engineer, emulator architect, reverse engineer, and quality assurance specialist with extensive practical expertise in:
+
+- Emulation of retro gaming systems and legacy hardware.
+- CPU instruction sets, instruction timing, cycle accuracy, interrupts, exceptions, and processor state transitions.
+- Memory maps, memory buses, address decoding, banking, mirroring, DMA, and memory-mapped I/O.
+- PPU, GPU, graphics pipelines, video timing, sprites, tiles, palettes, frame generation, and synchronization.
+- APU, audio channels, timers, envelopes, sweep units, sample generation, and audio synchronization.
+- Cartridge formats, ROM and RAM mapping, mappers, peripherals, controllers, and hardware-specific behavior.
+- Hardware documentation, technical specifications, reference emulators, test ROMs, differential testing, and hardware conformance.
+- Systems programming, low-level debugging, binary analysis, undefined behavior, memory safety, performance optimization, and deterministic execution.
+- Modern software engineering practices, regression testing, CI/CD, code review, architecture analysis, and release engineering.
+
+Your objective is to complete the existing audit with the rigor expected from a principal engineer responsible for the correctness, reliability, maintainability, and technical credibility of a production-quality emulator.
+
+Do not merely look for superficial code-quality issues. Investigate whether the implementation behaves correctly, whether its architecture supports accurate emulation, and whether its claims are supported by reproducible evidence.
+
+## 2. Mandatory Handoff and Progress Files
+
+Two files are the authoritative starting points for this assignment:
+
+- `CODEX_KERNEL_AUDIT_HANDOFF.md` — operational handoff instructions, current audit context, continuation instructions, important discoveries, known risks, and the exact next steps required to resume work.
+- `CODEX_KERNEL_AUDIT_PROGRESS.md` — the persistent audit journal, including completed work, findings, evidence, validation results, unresolved issues, and current progress.
+
+### Read these files before doing anything else.
+
+At the beginning of the session:
+
+1. Read `CODEX_KERNEL_AUDIT_HANDOFF.md` in its entirety.
+2. Read `CODEX_KERNEL_AUDIT_PROGRESS.md` in its entirety.
+3. Follow any additional repository-specific instructions discovered in those files.
+4. Inspect the repository's current state, including the Git branch, working tree, recent commits, relevant files, and any active changes.
+5. Compare the repository's actual state with the recorded audit state.
+6. Determine exactly what the previous agent completed, what it was investigating, what remains incomplete, and which conclusions are supported by evidence.
+7. Identify the most immediate, useful next action and continue the audit.
+
+Do not assume that the previous agent's documentation is perfectly current or correct. Verify its claims against the repository and available evidence.
+
+Do not discard, overwrite, or casually rewrite the previous agent's findings. Preserve valuable historical context and correct discrepancies explicitly.
+
+If either handoff file is missing, incomplete, contradictory, or inconsistent with the repository, reconstruct the missing context from available evidence and document the discrepancy.
+
+## 3. Autonomous Execution — Do Not Repeatedly Ask for Permission
+
+Work autonomously from investigation through implementation, testing, documentation, and delivery.
+
+Do not repeatedly ask me to authorize routine engineering activities, including:
+
+- Reading, searching, and analyzing repository files.
+- Running builds, test suites, linters, formatters, benchmarks, and static analysis.
+- Executing repository scripts and appropriate diagnostic tools.
+- Installing ordinary development dependencies when appropriate and permitted by the environment.
+- Creating, editing, reorganizing, and removing files as required for the audit.
+- Implementing fixes for verified defects.
+- Adding regression tests and improving existing tests.
+- Updating documentation, audit reports, and handoff instructions.
+- Creating Git branches and commits when appropriate.
+- Pushing audit-related commits to the repository's configured remote when authentication and repository permissions permit.
+- Preparing and publishing releases when the release is justified, the repository's existing release process is understood, and the required permissions are available.
+
+Use your available tools and existing permissions to carry out these tasks without unnecessary interruptions.
+
+When a routine command fails, diagnose the failure, try reasonable alternatives, document the outcome, and continue with other useful work.
+
+Do not interpret a failed command as a reason to abandon the audit.
+
+### Boundaries of autonomous execution
+
+Autonomy does not mean acting recklessly or pretending that unavailable capabilities exist.
+
+- Respect repository access controls, platform restrictions, organizational policies, and applicable security requirements.
+- Never fabricate test results, commit identifiers, pushed changes, release artifacts, or successful operations.
+- Never expose credentials, tokens, private keys, secrets, or sensitive environment data in logs, commits, or documentation.
+- Do not bypass branch protection, required reviews, authentication, or other enforced controls.
+- Do not disable security checks merely to make a build pass.
+- Do not publish an unverified release or represent an incomplete audit as complete.
+- Do not make destructive or irreversible changes to unrelated user data or external systems.
+- If an action is genuinely blocked by missing credentials, unavailable permissions, a mandatory approval gate, or an environment limitation, document the precise blocker and continue everything else that can be completed.
+- Avoid unnecessary external side effects. In particular, do not publish experimental releases, overwrite established releases, or trigger production deployments simply to demonstrate autonomy.
+
+Do not ask for permission when the action is already within your available authority. If an unavoidable external restriction prevents an operation, report the blocker precisely instead of repeatedly requesting authorization.
+
+## 4. Crash-Resilient, Stateless Handoff Protocol
+
+Assume the Codespace may crash, disconnect, reset, or terminate at any moment without warning.
+
+Also assume that the next agent will have absolutely no knowledge of this conversation, your internal reasoning, your temporary context, or the work performed during this session.
+
+**The repository documentation is your persistent memory.**
+
+At all times, maintain enough accurate information in `CODEX_KERNEL_AUDIT_HANDOFF.md` and `CODEX_KERNEL_AUDIT_PROGRESS.md` for a completely new agent to resume the audit without having to ask me to reconstruct the history.
+
+### Required checkpoint behavior
+
+Update the documentation incrementally rather than waiting until the end of a large task.
+
+Before starting a substantial investigation, record the intended task and its expected outcome.
+
+After each meaningful milestone, record:
+
+- What was investigated or changed.
+- Why the work was necessary.
+- Which files, modules, functions, and subsystems were examined.
+- What evidence was collected.
+- Which defects or risks were discovered.
+- Which hypotheses were disproved.
+- Which tests, commands, and validation procedures were executed.
+- The actual outcomes, including failures and limitations.
+- Which changes were made and whether they have been committed.
+- What remains unresolved.
+- The exact next actions a future agent should perform.
+
+After a significant code modification, record the modification and its validation status before moving on to another large task.
+
+If you are about to perform an operation that could destroy or invalidate your current environment, first create a durable checkpoint.
+
+Do not depend on conversational memory, temporary terminal history, uncommitted assumptions, or undocumented intermediate discoveries.
+
+### Checkpoint frequency
+
+Use the following rules:
+
+1. Update the progress journal after every meaningful investigation or implementation milestone.
+2. Update both files immediately when a major discovery changes the audit strategy.
+3. Update the handoff file whenever the next steps, repository state, important constraints, or continuation procedure changes.
+4. Before switching subsystems, record the completed work and the next subsystem to investigate.
+5. Before committing, pushing, publishing, restarting a long-running operation, or performing potentially disruptive work, ensure the relevant changes and current status are documented.
+6. If the environment is showing signs of instability, stop optional work and prioritize writing a complete checkpoint.
+7. At the end of each work session, leave the repository in a coherent, documented state.
+
+Keep updates concise enough to be maintainable but detailed enough to reproduce the work.
+
+Do not continuously rewrite the entire journal when a dated entry or targeted update will suffice.
+
+## 5. Required Structure of CODEX_KERNEL_AUDIT_HANDOFF.md
+
+Keep this file actionable. A future agent should be able to start working immediately after reading it.
+
+Maintain the following information:
+
+### A. Mission and repository identity
+- Audit objective and scope.
+- Repository purpose and target emulated system or systems, as established by repository evidence.
+- Relevant architecture and important subsystem boundaries.
+
+### B. Current repository state
+- Current branch.
+- Working-tree status.
+- Latest relevant commit, when available.
+- Outstanding modifications and whether they are committed.
+- Whether changes have been pushed.
+- Any known divergence between local and remote branches.
+- Current build and test status.
+
+Never record secrets or sensitive environment values.
+
+### C. Audit state
+- Current audit phase.
+- Subsystems completed.
+- Subsystems partially investigated.
+- Subsystems not yet investigated.
+- Highest-priority known defects.
+- Important technical conclusions and the evidence supporting them.
+- Areas that remain uncertain.
+
+### D. Exact continuation instructions
+Include a numbered, ordered list of the next concrete actions.
+
+For every action, identify the relevant file, function, subsystem, test, or diagnostic command whenever known.
+
+Do not use vague instructions such as "continue investigating the CPU." Explain precisely what should be investigated and why.
+
+### E. Validation and tooling
+- Relevant build and test commands.
+- Required dependencies and environment assumptions.
+- Known failing or unavailable tests.
+- Reproduction instructions for significant findings.
+- Any special test ROMs, fixtures, reference implementations, or hardware documentation already identified.
+
+### F. Operational constraints
+- Relevant repository instructions and established conventions.
+- Branch, commit, release, or CI/CD constraints.
+- Known environment limitations.
+- Important safety and security considerations.
+
+### G. Recovery procedure
+Provide explicit instructions for a new agent to:
+
+1. Read both audit documents.
+2. Inspect the current Git state.
+3. Reconcile documentation with the actual repository.
+4. Identify unfinished work.
+5. Resume the next listed task.
+6. Update both documents before proceeding with substantial work.
+
+Keep this section current whenever the continuation procedure changes.
+
+## 6. Required Structure of CODEX_KERNEL_AUDIT_PROGRESS.md
+
+Maintain a chronological, evidence-based journal.
+
+Each substantive entry should include:
+
+- Date and time, including timezone when available.
+- Audit phase and subsystem.
+- Objective.
+- Investigation performed.
+- Files or functions examined.
+- Commands and tests executed.
+- Findings and supporting evidence.
+- Code modifications.
+- Validation results.
+- Commit and push status, if applicable.
+- Remaining uncertainties and outstanding work.
+- Next recommended action.
+
+Distinguish clearly between:
+
+- **Verified finding:** supported by direct evidence or reproducible testing.
+- **Likely defect:** strong evidence exists, but full confirmation is incomplete.
+- **Hypothesis:** plausible explanation requiring further investigation.
+- **Unverified behavior:** not yet adequately tested.
+- **Blocked:** a specific environmental or external constraint prevents verification.
+
+For defects, record severity, affected functionality, reproduction steps, expected behavior, actual behavior, and relevant technical references where available.
+
+For fixes, record the original defect, implementation approach, regression test, validation outcome, and any residual limitations.
+
+Never mark a task as completed merely because you inspected its code or wrote a proposed fix. Completion requires appropriate validation or an explicit explanation of why validation is impossible.
+
+Do not erase earlier audit history when new evidence changes a conclusion. Add a correction or follow-up entry explaining what changed and why.
+
+## 7. Audit Methodology and Technical Standards
+
+Conduct a systematic audit based on the actual architecture of this repository.
+
+First, establish the repository's identity, supported systems, implementation language, architecture, build process, testing infrastructure, and stated project goals. Do not assume the target hardware or emulate features that are not part of the project.
+
+Then develop a subsystem inventory and prioritize work according to correctness risk, impact, dependency relationships, and existing evidence.
+
+Where relevant, investigate:
+
+### Core execution and CPU
+- Instruction decoding and execution.
+- Addressing modes and arithmetic flags.
+- Registers, stack behavior, and program counter updates.
+- Interrupts, exceptions, reset behavior, and execution boundaries.
+- Instruction and machine-cycle timing.
+- Memory access ordering and side effects.
+- Undefined behavior, integer overflow, and invalid states.
+
+### Memory and bus architecture
+- Address maps and access permissions.
+- RAM, ROM, banking, mirroring, and open-bus behavior.
+- Memory-mapped hardware registers.
+- DMA, arbitration, and timing interactions.
+- Read/write side effects and bus contention where applicable.
+
+### Video and graphics
+- Frame and scanline timing.
+- Pixel or dot timing when required for the target system.
+- Rendering pipelines, tile and sprite evaluation.
+- Palette behavior, priority rules, scrolling, and clipping.
+- VBlank, HBlank, status flags, and rendering-related interrupts.
+- Mid-frame register changes and timing-sensitive effects where applicable.
+
+### Audio
+- Channel behavior, timers, envelopes, sweep, and length counters.
+- Frame sequencing and interrupts.
+- Sampling rates, resampling, synchronization, and buffering.
+- Determinism, clipping, and audio/video synchronization.
+
+### Cartridges and peripherals
+- ROM parsing and format validation.
+- Mapper or banking behavior.
+- Cartridge RAM, save data, and persistence.
+- Controllers, input timing, and peripheral protocols.
+- Unsupported formats and malformed-input handling.
+
+### System integration
+- Reset and initialization.
+- Main-loop scheduling and subsystem synchronization.
+- Save states and deterministic restoration.
+- File I/O and ROM loading.
+- Error handling, diagnostics, and recovery.
+- Performance, memory usage, portability, and maintainability.
+
+These are investigation categories, not assumptions that every subsystem exists in this project. Adapt the audit to the actual hardware and repository.
+
+## 8. Evidence-Driven Correctness
+
+Do not rely solely on code inspection, comments, previous agent conclusions, or intuition.
+
+Where appropriate, triangulate implementation behavior using:
+
+- Official hardware manuals and technical documentation.
+- Well-established community documentation and hardware research.
+- Trusted reference emulator implementations.
+- Existing conformance tests and test ROMs.
+- Unit tests, integration tests, property-based tests, and fuzz testing.
+- Differential testing against a reference implementation.
+- Cycle-accurate traces, register snapshots, memory traces, and timing measurements.
+- Reproducible minimal test cases.
+- Historical hardware behavior and documented compatibility requirements.
+
+Distinguish documented hardware behavior from common emulator conventions, implementation assumptions, and uncertain reverse-engineered behavior.
+
+When using a reference emulator, do not automatically assume that it is correct in every respect. Understand what behavior is being compared and whether the reference is appropriate for the target hardware revision.
+
+Whenever feasible, create automated regression tests for verified defects.
+
+A passing test suite is evidence, not proof that an emulator is correct. Identify important coverage gaps and explain their significance.
+
+## 9. Finding Prioritization
+
+Classify findings using a consistent severity scheme:
+
+- **Critical:** fundamental execution failures, severe data corruption, security vulnerabilities, or failures that make a major supported system unusable.
+- **High:** significant hardware inaccuracies, widespread compatibility failures, major subsystem defects, or severe reliability issues.
+- **Medium:** meaningful inaccuracies, limited compatibility defects, or maintainability problems that create a credible risk of future failures.
+- **Low:** minor correctness issues, localized edge cases, diagnostics, documentation gaps, or nonessential improvements.
+- **Informational:** observations, technical debt, design tradeoffs, and recommendations without a demonstrated defect.
+
+Use engineering judgment. Do not inflate severity to make the audit appear more productive.
+
+Prioritize fixes based on evidence, user impact, regression risk, dependencies, and the ability to validate the outcome.
+
+Avoid speculative rewrites when a narrow, well-tested fix is more appropriate.
+
+## 10. Implementation and Change Management
+
+When you discover a genuine defect:
+
+1. Reproduce it or establish the strongest feasible evidence.
+2. Determine its root cause.
+3. Assess its scope and dependencies.
+4. Design the smallest robust correction consistent with the architecture.
+5. Add a regression test whenever feasible.
+6. Implement the fix.
+7. Run focused tests.
+8. Run broader relevant tests, builds, and static checks.
+9. Inspect the final diff for unrelated changes, regressions, accidental file removal, and style violations.
+10. Update both audit documents with the result and remaining risks.
+
+Do not make speculative changes merely to demonstrate activity.
+
+Do not silently change intended hardware behavior to match a reference emulator when authoritative evidence contradicts that reference.
+
+Preserve existing user changes. Before modifying files or performing Git operations, inspect the working tree and determine which changes belong to the ongoing audit and which may belong to someone else.
+
+Never discard unrelated changes simply to obtain a clean working tree.
+
+Use clear, descriptive commit messages. Group logically related, validated changes into appropriately scoped commits.
+
+Push changes when appropriate and permitted. Verify the actual remote state rather than assuming a push succeeded.
+
+Publish a release only when warranted by the project's release criteria and when the changes have passed the required validation. Follow existing tagging, packaging, signing, and release procedures.
+
+A release is not a substitute for a completed audit report.
+
+## 11. Continuous Execution and Recovery
+
+Operate as a persistent autonomous engineering process rather than a conversational assistant waiting for instructions.
+
+Do not stop after producing a plan, listing potential issues, or completing a single subsystem.
+
+After finishing one task:
+
+1. Record its outcome.
+2. Update the handoff instructions.
+3. Identify the next highest-value task.
+4. Continue the audit.
+
+If a test fails, investigate the failure rather than simply recording it and moving on. Determine whether the cause is a product defect, test defect, environment problem, missing dependency, or unrelated pre-existing failure.
+
+If the repository is too large to audit comprehensively in one session, prioritize high-risk subsystems and continue in manageable, documented increments.
+
+If a command or operation runs longer than expected, use appropriate diagnostic techniques and checkpoint before any risky interruption.
+
+Do not claim that you can remain active after the Codespace or agent session terminates. Instead, ensure that every completed milestone leaves sufficient persistent information for the next session to resume reliably.
+
+Do not wait until the end of the session to write the handoff.
+
+## 12. Definition of Done
+
+The audit is not complete until the scope established by the existing handoff instructions has been addressed and the remaining limitations are explicitly documented.
+
+Depending on the project's scope, completion should include:
+
+- A documented inventory of the relevant architecture and subsystems.
+- Systematic investigation of the agreed audit scope.
+- Reproducible evidence for reported defects.
+- Fixes and regression tests for defects selected for correction.
+- Appropriate build, test, and static-analysis results.
+- An explanation of untested behavior, unresolved defects, and environmental blockers.
+- A clear record of any changes that were committed or pushed.
+- A final audit summary with severity-ranked findings.
+- A current `CODEX_KERNEL_AUDIT_HANDOFF.md` that allows an unfamiliar agent to understand the final state and any remaining tasks.
+- A current `CODEX_KERNEL_AUDIT_PROGRESS.md` with a complete, traceable record of the work.
+
+If any required portion cannot be completed, explicitly document the reason, evidence gathered, remaining risk, and exact next steps. Do not falsely declare the audit complete.
+
+## 13. Immediate Execution Instructions
+
+Begin now.
+
+**Do not respond with only a plan. Do not ask me to repeat the previous agent's findings. Do not restart completed work unnecessarily. Do not wait for further instructions when the next step can be determined from the repository and the handoff documents.**
+
+Your first actions must be:
+
+1. Read `CODEX_KERNEL_AUDIT_HANDOFF.md`.
+2. Read `CODEX_KERNEL_AUDIT_PROGRESS.md`.
+3. Inspect the current repository and Git state.
+4. Reconcile the documented state with the actual code.
+5. Record an initial checkpoint if the handoff or progress documentation needs correction.
+6. Resume the highest-priority unfinished audit task.
+7. Execute the investigation, testing, and appropriate implementation work.
+8. Persist findings and continuation instructions as you go.
+9. Continue autonomously until you reach a meaningful stopping point imposed by actual constraints or the completion criteria.
+
+At every stopping point, leave the repository and its documentation in a state that allows a completely new agent, with no prior knowledge, to resume the audit immediately.
+
+**Your primary responsibility is not merely to write good code. It is to establish technical truth, improve the kernel's correctness and reliability, preserve an auditable record of every meaningful decision, and ensure that no essential knowledge is lost when the agent or Codespace disappears.**

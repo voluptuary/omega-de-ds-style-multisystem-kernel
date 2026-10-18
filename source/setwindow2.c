@@ -584,8 +584,7 @@ void save_set2_info(void)
 	SET_info_buffer[assress_toggle_backup] = toggle_backup;
 	SET_info_buffer[assress_toggle_reset] = toggle_reset;
 
-	if(!Save_SET_info(SET_info_buffer,0x200))
-		Show_error_num(3);
+	Save_SET_info(SET_info_buffer,0x200);
 	{
 		u16 led_status = (led_open_sel<<7) | (Breathing_R<<5) | (Breathing_G<<4) | (Breathing_B<<3) | (SD_R<<2) | (SD_G<<1) | (SD_B);
 		Set_LED_control(led_status);

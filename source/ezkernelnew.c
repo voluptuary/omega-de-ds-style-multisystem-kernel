@@ -6036,8 +6036,7 @@ void save_set_info_SELECT(void)
 
 	//save to nor
 	Launcher_PrepareSettingsFlashWrite();
-	if(!Save_SET_info(SET_info_buffer,0x200))
-		Show_error_num(3);
+	Save_SET_info(SET_info_buffer,0x200);
 }
 //---------------------------------------------------------------------------------
 //Sort folder
@@ -9878,7 +9877,7 @@ void Check_save_flag(void)
 	}
 }
 //---------------------------------------------------------------------------------
-u8 Set_saveMODE(BYTE saveMODE)
+void Set_saveMODE(BYTE saveMODE)
 {
 	u32 address;
 	for(address=0;address < assress_max;address++)
@@ -9892,12 +9891,7 @@ u8 Set_saveMODE(BYTE saveMODE)
 
 	//save to nor
 	Launcher_PrepareSettingsFlashWrite();
-	if(!Save_SET_info(SET_info_buffer,0x200))
-	{
-		Show_error_num(3);
-		return 0;
-	}
-	return 1;
+	Save_SET_info(SET_info_buffer,0x200);
 }
 
 
@@ -10021,10 +10015,7 @@ static void Launcher_SaveSettingsInfo(void)
     SET_info_buffer[assress_toggle_backup] = gl_toggle_backup;
 
     Launcher_PrepareSettingsFlashWrite();
-	if(!Save_SET_info(SET_info_buffer, 0x200))
-	{
-        Show_error_num(3);
-	}
+	Save_SET_info(SET_info_buffer, 0x200);
 
 	led_status = (gl_led_open_sel << 7) | (gl_Breathing_R << 5) | (gl_Breathing_G << 4) |
                  (gl_Breathing_B << 3) | (gl_SD_R << 2) | (gl_SD_G << 1) | gl_SD_B;
@@ -10046,8 +10037,7 @@ static void Launcher_SaveHotkeys(const u8 *sleep_keys, const u8 *addon_keys)
     SET_info_buffer[assress_edit_rtshotkey_2] = addon_keys[2];
 
     Launcher_PrepareSettingsFlashWrite();
-    if(!Save_SET_info(SET_info_buffer, 0x200))
-        Show_error_num(3);
+    Save_SET_info(SET_info_buffer, 0x200);
 }
 
 const char *Launcher_OnOffText(u16 value)

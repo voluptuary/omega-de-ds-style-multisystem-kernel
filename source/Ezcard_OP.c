@@ -425,12 +425,13 @@ void IWRAM_CODE Bank_Switching(u8 bank)
 	*((vu8 *)(SAVE_sram_base+0x0000)) = bank ;
 }
 // --------------------------------------------------------------------
-u8 IWRAM_CODE Save_info(u32 info_offset, u16 * info_buffer,u32 buffersize)
+u8 IWRAM_CODE Save_info(u32 info_offset, u16 * info_buffer,u32 buffersize, u8 legacy_polling)
 {
 	u32 offset;
 	vu16* buf = (vu16*)info_buffer ;
 	register u32 loopwrite ;
 	u16 old_ie = REG_IE;
+	vu16 v1,v2;
 	u8 succeeded = 0;
 
 	/* The default VBlank handler is in S71 ROM, which is busy during these commands. */
@@ -446,11 +447,22 @@ u8 IWRAM_CODE Save_info(u32 info_offset, u16 * info_buffer,u32 buffersize)
 	*((vu16 *)(FlashBase_S71+0x555*2)) = 0xAA ;
 	*((vu16 *)(FlashBase_S71+0x2AA*2)) = 0x55 ;
 	*((vu16 *)(FlashBase_S71+offset)) = 0x30 ;//erase
-	if(!Wait_Flash_Operation((vu16*)FlashBase_S71,
-		(vu16*)(FlashBase_S71+offset), 0xFFFF, 0, 0, 0))
-		goto save_info_done;
-	if(!Verify_Flash_Erased((vu16*)(FlashBase_S71+offset),0x10000/2))
-		goto save_info_done;
+	if(legacy_polling)
+	{
+		do
+		{
+			v1 = *((vu16 *)(FlashBase_S71+offset)) ;
+			v2 = *((vu16 *)(FlashBase_S71+offset)) ;
+		}while(v1!=v2);
+	}
+	else
+	{
+		if(!Wait_Flash_Operation((vu16*)FlashBase_S71,
+			(vu16*)(FlashBase_S71+offset), 0xFFFF, 0, 0, 0))
+			goto save_info_done;
+		if(!Verify_Flash_Erased((vu16*)(FlashBase_S71+offset),0x10000/2))
+			goto save_info_done;
+	}
 	//erase finish
 	if(S71id == 0x2202) //PL064
 	{
@@ -460,7 +472,15 @@ u8 IWRAM_CODE Save_info(u32 info_offset, u16 * info_buffer,u32 buffersize)
 			*((vu16 *)(FlashBase_S71+0x2AA*2)) = 0x55 ;
 			*((vu16 *)(FlashBase_S71+0x555*2)) = 0xA0 ;
 			*((vu16 *)(FlashBase_S71+offset+loopwrite*2)) = buf[loopwrite];
-			if(!Wait_Flash_Operation((vu16*)FlashBase_S71,
+			if(legacy_polling)
+			{
+				do
+				{
+					v1 = *((vu16 *)(FlashBase_S71+offset+loopwrite*2));
+					v2 = *((vu16 *)(FlashBase_S71+offset+loopwrite*2));
+				}while(v1!=v2);
+			}
+			else if(!Wait_Flash_Operation((vu16*)FlashBase_S71,
 				(vu16*)(FlashBase_S71+offset+loopwrite*2), buf[loopwrite], 0, 0, 0))
 				goto save_info_done;
 		}
@@ -478,13 +498,24 @@ u8 IWRAM_CODE Save_info(u32 info_offset, u16 * info_buffer,u32 buffersize)
 				*((vu16 *)(FlashBase_S71+offset+loopwrite*32 +2*i )) = buf[loopwrite*16+i];
 			}
 			*((vu16 *)(FlashBase_S71+offset+loopwrite*32)) = 0x29;
-			if(!Wait_Flash_Operation((vu16*)FlashBase_S71,
-				(vu16*)(FlashBase_S71+offset+loopwrite*32+0x1E),
-				buf[loopwrite*16+15], 1, 0, 0))
-				goto save_info_done;
-			if(!Verify_Flash_Data((vu16*)(FlashBase_S71+offset+loopwrite*32),
-				&buf[loopwrite*16],16))
-				goto save_info_done;
+			if(legacy_polling)
+			{
+				do
+				{
+					v1 = *((vu16 *)(FlashBase_S71+offset+loopwrite*32));
+					v2 = *((vu16 *)(FlashBase_S71+offset+loopwrite*32));
+				}while(v1!=v2);
+			}
+			else
+			{
+				if(!Wait_Flash_Operation((vu16*)FlashBase_S71,
+					(vu16*)(FlashBase_S71+offset+loopwrite*32+0x1E),
+					buf[loopwrite*16+15], 1, 0, 0))
+					goto save_info_done;
+				if(!Verify_Flash_Data((vu16*)(FlashBase_S71+offset+loopwrite*32),
+					&buf[loopwrite*16],16))
+					goto save_info_done;
+			}
 		}
 	}
 
@@ -498,17 +529,17 @@ save_info_done:
 // --------------------------------------------------------------------
 u8 IWRAM_CODE Save_sav_info(u16 * SAV_info_buffer,u32 buffersize)
 {
-	return Save_info(SAVE_info_offset, SAV_info_buffer,buffersize);
+	return Save_info(SAVE_info_offset, SAV_info_buffer,buffersize,0);
 }
 // --------------------------------------------------------------------
 u8 IWRAM_CODE Save_NOR_info(u16 * NOR_info_buffer,u32 buffersize)
 {
-	return Save_info(NOR_info_offset, NOR_info_buffer,buffersize);
+	return Save_info(NOR_info_offset, NOR_info_buffer,buffersize,0);
 }
 // --------------------------------------------------------------------
-u8 IWRAM_CODE Save_SET_info(u16 * SET_info_buffer,u32 buffersize)
+void IWRAM_CODE Save_SET_info(u16 * SET_info_buffer,u32 buffersize)
 {
-	return Save_info(SET_info_offset, SET_info_buffer,buffersize);
+	Save_info(SET_info_offset, SET_info_buffer,buffersize,1);
 }
 // --------------------------------------------------------------------
 void IWRAM_CODE Read_NOR_info()

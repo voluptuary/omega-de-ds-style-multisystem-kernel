@@ -222,7 +222,8 @@ u8 Chip_Erase()
 				REG_IME = old_ime;
 				return 0;
 			}
-			if((byte_offset & 0x000FFFFF) == 0x000FFFFE)
+			/* Keep verifying every word, but redraw only once per 8 MiB bank. */
+			if((byte_offset & 0x007FFFFF) == 0x007FFFFE)
 				NOR_ChipEraseProgress(&count);
 		}
 	}
